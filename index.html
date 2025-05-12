@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>점심 룰렛</title> 
+  <!-- // This comment inside <head> is less likely to render, but removed for correctness // -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <style>
+    :root {
+      --size: min(440px, 90vw);
+      --font-size-base: clamp(14px, 3vw, 16px);
+      --font-size-title: clamp(18px, 4vw, 24px);
+      --primary-color: #2563eb; /* Main blue */
+      --primary-hover: #1d4ed8; /* Darker blue */
+      --danger-color: #e53e3e;  /* Red for reset */
+      --danger-hover: #c53030; /* Darker red */
+      --light-gray: #cbd5e0;
+      --medium-gray: #a0aec0;
+      --dark-gray: #4a5568;
+      --bg-gradient-start: #e9edf1; /* Softer background start */
+      --bg-gradient-end: #dbe3ee;   /* Softer background end */
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(145deg, var(--bg-gradient-start), var(--bg-gradient-end)); /* Updated gradient */
+      padding: 20px 16px; /* Slightly more top/bottom padding */
+      touch-action: manipulation;
+      overflow-x: hidden;
+      position: relative;
+      color: var(--dark-gray);
+    }
+    #controls {
+      display: flex;
+      gap: 0.7rem; /* Slightly increased gap */
+      margin-bottom: 2.8rem; /* Increased margin */
+      width: var(--size);
+      max-width: 100%;
+    }
+    #controls input {
+      padding: 0.6rem 1rem; /* Adjusted padding */
+      flex: 1;
+      border: 1px solid var(--light-gray);
+      border-radius: 8px;
+      font-size: var(--font-size-base);
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle shadow */
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #controls input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); /* Focus ring */
+    }
+    #controls button {
+      padding: 0.6rem 1.2rem;
+      font-size: var(--font-size-base);
+      font-weight: 500; /* Slightly bolder */
+      border: none;
+      border-radius: 8px; /* Consistent radius */
+      background: var(--primary-color);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.16s ease, transform 0.1s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      -webkit-tap-highlight-color: transparent;
+    }
+    #controls button:hover {
+      background: var(--primary-hover);
+    }
+     #controls button:active {
+      transform: scale(0.98);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    #wheel-container {
+      position: relative;
+      width: var(--size);
+      height: var(--size);
+      margin-bottom: 1rem;
+      touch-action: none;
+    }
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform-origin: 50% 50%;
+      /* Subtle inner shadow for depth */
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 10px 25px rgba(0,0,0,0.1); /* Added outer shadow */
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); /* Reduced drop shadow */
+      touch-action: none;
+      border: 1px solid rgba(255, 255, 255, 0.5); /* Subtle highlight border */
+    }
+    .pointer {
+      --h: 28px; /* Slightly taller pointer */
+      position: absolute;
+      top: calc(var(--h) * -1 + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 16px solid transparent; /* Slightly wider base */
+      border-right: 16px solid transparent;
+      border-top: var(--h) solid #333; /* Changed to dark gray/black */
+      filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));
+      margin-top: 2px; /* Adjusted margin for slight overlap */
+      z-index: 5;
+    }
+    svg path {
+      cursor: pointer;
+      transition: opacity 0.2s ease, filter 0.2s ease;
+      touch-action: none;
+      stroke: rgba(0,0,0,0.05); /* Very subtle stroke between segments */
+      stroke-width: 0.5px;
+    }
+    svg path:hover { opacity: 0.9; filter: brightness(1.08); } /* Slightly brighter hover */
+    svg text {
+      font-size: min(15px, 3.5vw);
+      fill: #fff;
+      font-weight: 600;
+      text-anchor: middle;
+      alignment-baseline: middle;
+      pointer-events: auto;
+      paint-order: stroke;
+      stroke: rgba(0,0,0,0.5); /* Slightly darker stroke for better contrast */
+      stroke-width: 1.5px; /* Slightly thicker stroke */
+      transition: all 0.2s ease;
+      cursor: pointer;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    svg text:hover { font-weight: 700; transform: scale(1.05); }
+
+    /* Container for Spin and Reset buttons */
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.8rem; /* Space between buttons */
+        margin-top: 1.5rem; /* Increased space above buttons */
+        width: var(--size);
+        max-width: 100%;
+    }
+
+    #spin {
+      padding: 0.7rem 0; /* Adjusted padding for height */
+      font-size: var(--font-size-base);
+      font-weight: 600; /* Bolder spin button */
+      border: none;
+      border-radius: 8px;
+      background: var(--primary-color);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.16s ease, transform 0.1s ease, box-shadow 0.16s ease;
+      width: 180px; /* Fixed width */
+      height: 48px; /* Match height */
+      box-shadow: 0 3px 6px rgba(37, 99, 235, 0.2); /* Subtle blue shadow */
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0; /* Prevent shrinking */
+    }
+    #spin:hover {
+        background: var(--primary-hover);
+        box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+    #spin:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    #spin:disabled {
+        background-color: var(--medium-gray);
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    /* Reset Button Styling (moved next to spin) */
+    #reset-btn {
+      /* position, top, right removed */
+      background: var(--danger-color);
+      padding: 0.7rem 1rem; /* Match spin button height */
+      font-size: var(--font-size-base);
+      font-weight: 500;
+      border-radius: 8px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.16s ease, transform 0.1s ease, box-shadow 0.16s ease;
+      height: 48px; /* Match spin button height */
+      box-shadow: 0 3px 6px rgba(229, 62, 62, 0.2);
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0; /* Prevent shrinking */
+    }
+    #reset-btn:hover {
+        background: var(--danger-hover);
+        box-shadow: 0 4px 8px rgba(229, 62, 62, 0.3);
+    }
+     #reset-btn:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 4px rgba(229, 62, 62, 0.2);
+    }
+
+    #result { /* For feedback messages */
+      margin-top: 1.2rem; /* Reduced margin */
+      font-size: calc(var(--font-size-base) * 0.95); /* Slightly smaller feedback */
+      font-weight: 500;
+      color: var(--medium-gray); /* Less prominent color */
+      min-height: 1.6rem;
+      text-align: center;
+      width: 100%;
+      padding: 0 16px;
+      transition: opacity 0.3s ease;
+    }
+
+    /* --- 결과 팝업 스타일 --- */
+    .result-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); /* Slightly less dark overlay */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .result-popup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .popup-content {
+      /* Updated Gradient */
+      background: linear-gradient(135deg, #667eea, #764ba2); /* Indigo/Purple gradient */
+      border-radius: 16px;
+      padding: 30px 35px; /* More horizontal padding */
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); /* Softer, larger shadow */
+      max-width: 90%;
+      width: 300px; /* Slightly wider popup */
+      transform: scale(0.8) translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+    }
+
+    .result-popup.show .popup-content {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .popup-title {
+      font-size: clamp(18px, 4.5vw, 22px); /* Slightly smaller title */
+      color: rgba(255, 255, 255, 0.95); /* Slightly less bright white */
+      margin-bottom: 8px;
+      line-height: 1.4;
+      font-weight: 500; /* Normal weight title */
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); /* Softer shadow */
+    }
+    .popup-title small {
+       font-size: 0.8em; opacity: 0.8; display: block; margin-top: 4px; font-weight: 400;
+    }
+
+    .popup-result {
+      font-size: clamp(24px, 7vw, 30px); /* Adjusted result size */
+      font-weight: 700;
+      color: #fff; /* Pure white result */
+      background: rgba(255, 255, 255, 0.15); /* Slightly more subtle background */
+      padding: 12px 22px;
+      border-radius: 10px;
+      margin: 15px 0 28px; /* More bottom margin */
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      display: inline-block;
+      word-break: keep-all;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Inner shadow for result */
+    }
+     .popup-result span { /* Style for emoji */
+         display: inline-block;
+         margin-left: 8px;
+         transform: translateY(2px); /* Align emoji better */
+     }
+
+    .popup-close {
+      color: rgba(255, 255, 255, 0.9);
+      background-color: rgba(0, 0, 0, 0.2);
+      border: none;
+      border-radius: 8px; /* Match other buttons */
+      padding: 10px 25px;
+      font-size: 15px;
+      font-weight: 500; /* Consistent weight */
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .popup-close:hover {
+      background-color: rgba(0, 0, 0, 0.35);
+    }
+    .popup-close:active {
+      transform: scale(0.97);
+    }
+
+    /* --- 축하 애니메이션 효과 (컨페티) --- */
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: #f00;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* --- 모바일 전용 스타일 --- */
+    @media (max-width: 480px) {
+      body {
+        padding-top: 20px; /* Adjusted padding */
+         padding-bottom: 20px;
+      }
+      #controls {
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-bottom: 1.5rem;
+      }
+      #controls input, #controls button {
+        width: 100%;
+      }
+      #wheel-container {
+        margin-top: 10px;
+        margin-bottom: 1.5rem; /* More space below wheel */
+      }
+      .pointer {
+        --h: 24px; /* Adjust pointer size */
+        border-left-width: 14px;
+        border-right-width: 14px;
+      }
+       .action-buttons {
+           flex-direction: column; /* Stack buttons vertically */
+           gap: 0.6rem;
+           width: 100%; /* Full width */
+           max-width: 250px; /* Limit button width */
+           margin: 1rem auto; /* Center the column */
+       }
+       #spin, #reset-btn {
+           width: 100%; /* Full width in column */
+       }
+      .popup-content {
+        padding: 25px 20px;
+        width: 90%;
+        max-width: 300px; /* Max width on small screens */
+      }
+       .popup-title { font-size: 17px; }
+       .popup-result { font-size: 22px; }
+       .popup-close { font-size: 14px; padding: 9px 22px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Controls -->
+  <div id="controls">
+    <input id="new-item" placeholder="음식 메뉴 추가..." aria-label="새 항목 추가"/>
+    <button id="add-item">추가</button>
+  </div>
+
+  <!-- Wheel -->
+  <div id="wheel-container">
+    <div class="pointer"></div>
+    <svg id="wheel" viewBox="-200 -200 400 400"></svg>
+  </div>
+
+  <!-- Action Buttons (Spin & Reset) -->
+  <div class="action-buttons">
+      <button id="spin">돌려보세요~!</button>
+      <button id="reset-btn" title="항목 초기화">초기화</button>
+  </div>
+
+  <!-- Result Message Area -->
+  <div id="result"></div>
+
+  <!-- Result Popup -->
+  <div class="result-popup" id="resultPopup">
+    <div class="popup-content">
+      <h2 class="popup-title" id="popupTitle">오늘의 점심은!</h2>
+      <div class="popup-result" id="popupResult">결과</div>
+      <button class="popup-close" id="popupClose">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Constants ---
+    const FULL_CIRCLE = 360;
+    const POINTER_POSITION = 270;
+    const STORAGE_KEY = 'lunchRouletteItems_v2';
+    const DEFAULT_ITEMS = ["김치찌개", "돈까스", "비빔밥", "짜장면", "샐러드", "라면", "떡볶이", "초밥"];
+    const COLORS = [
+        "#F87171", "#FB923C", "#FACC15", "#A3E635", "#4ADE80", "#34D399",
+        "#2DD4BF", "#60A5FA", "#818CF8", "#A78BFA", "#F472B6", "#FB7185"
+    ];
+    const CELEBRATION_EMOJIS = ["🎉", "🎊", "✨", "🥳", "👌", "😋", "🥳", "🙌", "🎯", "💯", "🤩", "👍"];
+    const CELEBRATION_MESSAGES = [
+      "맛있게 드세요!", "오늘도 맛있는 하루!", "행복한 식사시간!",
+      "오늘의 메뉴로 결정!", "탁월한 선택!", "운명의 데스티니~",
+      "이거 완전 맛있겠다!", "오늘 점심은 성공!"
+    ];
+
+    // --- State Variables ---
+    let items = [];
+    let segmentPositions = [];
+    let spinning = false;
+    let currentRotation = 0;
+    let storageAvailable = false;
+
+    // --- DOM Elements ---
+    let wheel, spinBtn, addBtn, input, result, resetBtn;
+    let resultPopup, popupTitle, popupResult, popupClose;
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', initializeApp);
+
+    function initializeApp() {
+      // Assign DOM elements
+      wheel = document.getElementById('wheel');
+      spinBtn = document.getElementById('spin');
+      addBtn = document.getElementById('add-item');
+      input = document.getElementById('new-item');
+      result = document.getElementById('result');
+      resetBtn = document.getElementById('reset-btn');
+      resultPopup = document.getElementById('resultPopup');
+      popupTitle = document.getElementById('popupTitle');
+      popupResult = document.getElementById('popupResult');
+      popupClose = document.getElementById('popupClose');
+
+      checkStorage();
+      loadItems();
+      buildWheel();
+      setupEventListeners();
+    }
+
+    // --- Local Storage Handling ---
+    function checkStorage() {
+      try {
+        const test = '__storage_test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        storageAvailable = true;
+      } catch (e) {
+        storageAvailable = false;
+        console.warn('localStorage를 사용할 수 없습니다. 변경사항이 저장되지 않습니다.');
+      }
+    }
+
+    function loadItems() {
+      let loaded = false;
+      if (storageAvailable) {
+          try {
+              const savedItems = localStorage.getItem(STORAGE_KEY);
+              if (savedItems) {
+                  const parsedItems = JSON.parse(savedItems);
+                  if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+                      items = parsedItems;
+                      console.log('저장된 항목 로드:', items);
+                      loaded = true;
+                  }
+              }
+          } catch (e) {
+              console.error('저장된 항목 로딩 오류:', e);
+              localStorage.removeItem(STORAGE_KEY);
+          }
+      }
+      if (!loaded) {
+          items = [...DEFAULT_ITEMS];
+          console.log('기본 항목 사용:', items);
+          if (storageAvailable) saveItems();
+      }
+    }
+
+    function saveItems() {
+      if (!storageAvailable) return;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        console.log('항목 저장:', items);
+      } catch (e) {
+        console.error('항목 저장 오류:', e);
+        displayTemporaryMessage('항목 저장 중 오류 발생', true);
+      }
+    }
+
+    // --- Wheel Building ---
+    function buildWheel() {
+        wheel.innerHTML = '';
+        segmentPositions = [];
+        // result.textContent = ''; // Clear feedback only when needed, not on every build
+
+        const enableButtons = items.length >= 2;
+        spinBtn.disabled = spinning || !enableButtons; // Disable if spinning or not enough items
+        resetBtn.disabled = spinning; // Only disable reset if spinning
+
+        if (items.length === 0) {
+            result.textContent = '항목이 없습니다. 메뉴를 추가해주세요!';
+            spinBtn.disabled = true; // Ensure spin is disabled
+            // Decide if reset should be enabled to restore defaults even when empty
+            // resetBtn.disabled = true;
+            return;
+        }
+
+        const segmentAngle = FULL_CIRCLE / items.length;
+
+        items.forEach((item, i) => {
+            const startAngle = i * segmentAngle;
+            const endAngle = (i + 1) * segmentAngle;
+            segmentPositions.push({ item: item, startAngle: startAngle, endAngle: endAngle });
+
+            const startRad = startAngle * Math.PI / 180;
+            const endRad = endAngle * Math.PI / 180;
+            const x1 = 200 * Math.cos(startRad);
+            const y1 = 200 * Math.sin(startRad);
+            const x2 = 200 * Math.cos(endRad);
+            const y2 = 200 * Math.sin(endRad);
+            const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+            const pathData = `M 0 0 L ${x1} ${y1} A 200 200 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', COLORS[i % COLORS.length]);
+            path.style.cursor = 'pointer';
+            path.setAttribute('data-item-name', item);
+            path.addEventListener('click', () => removeItem(i));
+
+            const titleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            titleElement.textContent = `${item} (클릭하여 제거)`;
+            path.appendChild(titleElement);
+            wheel.appendChild(path);
+
+            // --- Create SVG Text ---
+            const midAngle = startAngle + segmentAngle / 2;
+            const midRad = midAngle * Math.PI / 180;
+            const textRadius = items.length <= 6 ? 110 : 125;
+            const tx = textRadius * Math.cos(midRad);
+            const ty = textRadius * Math.sin(midRad);
+            let textRotation = midAngle;
+            if (textRotation > 90 && textRotation < 270) {
+                textRotation += 180;
+            }
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', tx);
+            text.setAttribute('y', ty);
+            text.setAttribute('transform', `rotate(${textRotation} ${tx} ${ty})`);
+            const maxLen = items.length > 10 ? 7 : (items.length > 6 ? 9 : 12);
+            text.textContent = item.length > maxLen ? item.substring(0, maxLen - 1) + '…' : item;
+            text.style.cursor = 'pointer';
+            text.setAttribute('data-index', i);
+            text.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeItem(i);
+            });
+
+            const textTitleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            textTitleElement.textContent = `${item} (클릭하여 제거)`;
+            text.appendChild(textTitleElement);
+            wheel.appendChild(text);
+        });
+    }
+
+
+    // --- Item Management ---
+    function addItem() {
+        const value = input.value.trim();
+        if (value && items.length < 20) {
+            if (!items.includes(value)) {
+                items.push(value);
+                input.value = '';
+                buildWheel();
+                saveItems();
+                displayTemporaryMessage(`"${value}" 추가됨`);
+            } else {
+                displayTemporaryMessage(`"${value}"은(는) 이미 있어요`, true);
+            }
+        } else if (items.length >= 20) {
+            displayTemporaryMessage('항목은 최대 20개까지 추가 가능해요', true);
+        } else if (!value) {
+             displayTemporaryMessage('추가할 메뉴 이름을 입력해주세요', true);
+        }
+        input.focus();
+    }
+
+    function removeItem(index) {
+        if (spinning || index < 0 || index >= items.length) return;
+
+        const removedItem = items[index];
+        items.splice(index, 1);
+
+        buildWheel();
+        saveItems();
+        displayTemporaryMessage(`"${removedItem}" 제거됨`);
+
+        if (items.length === 0) {
+            result.textContent = '모든 항목이 제거되었습니다. 새 항목을 추가해주세요.';
+        } else if (items.length < 2) {
+            spinBtn.disabled = true; // Disable spin if less than 2 items remain
+        }
+    }
+
+    function resetAllItems() {
+      if (spinning) return;
+
+      if (!confirm('모든 항목을 기본 설정으로 초기화하시겠습니까? 현재 목록은 사라집니다.')) {
+          return;
+      }
+
+      items = [...DEFAULT_ITEMS];
+      saveItems();
+      buildWheel();
+      displayTemporaryMessage('항목이 기본값으로 초기화되었습니다.');
+    }
+
+    // --- Wheel Spinning & Result ---
+    function getResultItem(rotation) {
+        if (items.length === 0) return null;
+        const finalRotation = (rotation % FULL_CIRCLE + FULL_CIRCLE) % FULL_CIRCLE;
+        const targetAngle = (POINTER_POSITION - finalRotation + FULL_CIRCLE) % FULL_CIRCLE;
+
+        const winningSegment = segmentPositions.find(seg => {
+            if (seg.startAngle > seg.endAngle) {
+                return targetAngle >= seg.startAngle || targetAngle < seg.endAngle;
+            }
+            return targetAngle >= seg.startAngle && targetAngle < seg.endAngle;
+        });
+
+        return winningSegment ? winningSegment.item : null;
+    }
+
+    function spinWheel() {
+        if (spinning || items.length < 2) {
+            if (items.length < 2) {
+                displayTemporaryMessage('룰렛을 돌리려면 항목이 2개 이상 필요해요', true);
+            }
+            return;
+        }
+
+        spinning = true;
+        result.textContent = '';
+        spinBtn.disabled = true;
+        resetBtn.disabled = true;
+
+        const randomRotations = Math.floor(Math.random() * 4) + 6;
+        const randomAngle = Math.random() * FULL_CIRCLE;
+        const spinAngle = (randomRotations * FULL_CIRCLE) + randomAngle;
+        const targetRotation = currentRotation + spinAngle;
+
+        gsap.to(wheel, {
+            rotation: targetRotation,
+            duration: 6,
+            ease: 'cubic-bezier(0.1, 0.7, 0.1, 1)',
+            onComplete: () => {
+                currentRotation = targetRotation % FULL_CIRCLE;
+                const winningItem = getResultItem(targetRotation);
+
+                if (winningItem) {
+                    setTimeout(() => showResultPopup(winningItem), 150);
+                } else {
+                    console.error("결과 항목을 찾을 수 없습니다!", targetRotation);
+                    displayTemporaryMessage('오류: 결과를 결정할 수 없습니다.', true);
+                }
+
+                spinning = false;
+                spinBtn.disabled = items.length < 2; // Re-enable only if still possible to spin
+                resetBtn.disabled = false;
+            }
+        });
+    }
+
+
+    // --- Popup Handling ---
+    function showResultPopup(resultItem) {
+        const randomMessage = CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)];
+        popupTitle.innerHTML = `오늘의 점심은! <small>${randomMessage}</small>`;
+
+        const randomEmoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
+        popupResult.innerHTML = `${resultItem} <span>${randomEmoji}</span>`;
+
+        resultPopup.classList.add('show');
+        setTimeout(createConfetti, 250);
+    }
+
+    function hideResultPopup() {
+        resultPopup.classList.remove('show');
+        setTimeout(() => {
+            const existingConfetti = resultPopup.querySelectorAll('.confetti');
+            existingConfetti.forEach(item => item.remove());
+        }, 400);
+    }
+
+    // --- Confetti Effect ---
+    function createConfetti() {
+        const popupContentElement = resultPopup.querySelector('.popup-content');
+        if (!popupContentElement) return;
+
+        const existingConfetti = popupContentElement.querySelectorAll('.confetti');
+        existingConfetti.forEach(item => item.remove());
+        const confettiCount = 90;
+
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.backgroundColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            const size = Math.random() * 8 + 4;
+            confetti.style.width = `${size}px`;
+            confetti.style.height = `${size * (Math.random() * 0.5 + 0.75)}px`;
+            confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+            const startX = popupContentElement.offsetWidth / 2;
+            const startY = popupContentElement.offsetHeight * 0.4;
+            confetti.style.left = `${startX}px`;
+            confetti.style.top = `${startY}px`;
+            popupContentElement.appendChild(confetti);
+
+            gsap.to(confetti, {
+                x: (Math.random() - 0.5) * popupContentElement.offsetWidth * 1.8,
+                y: Math.random() * popupContentElement.offsetHeight * 1.5,
+                opacity: 0,
+                scale: 0.4 + Math.random() * 0.6,
+                rotation: Math.random() * 720 - 360,
+                duration: 1.8 + Math.random() * 2.2,
+                ease: 'power1.out',
+                delay: Math.random() * 0.3,
+                onComplete: () => confetti.remove()
+            });
+        }
+    }
+
+    // --- Utility Functions ---
+    let messageTimeout;
+    function displayTemporaryMessage(message, isWarning = false) {
+        clearTimeout(messageTimeout);
+        result.textContent = message;
+        result.style.color = isWarning ? 'var(--danger-color)' : 'var(--medium-gray)';
+        result.style.opacity = 1;
+
+        messageTimeout = setTimeout(() => {
+           if (result.textContent === message) {
+               gsap.to(result, { opacity: 0, duration: 0.4, onComplete: () => {
+                   if (result.style.opacity == 0) result.textContent = '';
+               }});
+           }
+        }, 3000);
+    }
+
+    // --- Event Listeners Setup ---
+    function setupEventListeners() {
+      // Add Item
+      addBtn.addEventListener('click', addItem);
+      input.addEventListener('keyup', (e) => { if (e.key === 'Enter') addItem(); });
+
+      // Reset Items
+      resetBtn.addEventListener('click', resetAllItems);
+
+      // Spin Wheel
+      spinBtn.addEventListener('click', spinWheel);
+      spinBtn.addEventListener('touchstart', (e) => { e.preventDefault(); spinWheel(); }, { passive: false });
+
+      // Close Popup
+      popupClose.addEventListener('click', hideResultPopup);
+      resultPopup.addEventListener('click', (e) => { if (e.target === resultPopup) hideResultPopup(); });
+    }
+
+  </script>
+</body>
+</html>
