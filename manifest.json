@@ -1,0 +1,27 @@
+// manifest.json
+{
+  "name": "Lunch Roulette",
+  "short_name": "점심룰렛",
+  "description": "오늘 점심 뭐 먹지? 룰렛으로 결정해보세요!",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#e9edf1",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png", // 동일 파일을 다른 크기로도 지정 가능 (더 큰 아이콘 권장)
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": ".",
+  "lang": "ko-KR",
+  "orientation": "portrait-primary"
+}

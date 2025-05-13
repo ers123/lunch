@@ -3,8 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>점심 룰렛</title> 
-  <!-- // This comment inside <head> is less likely to render, but removed for correctness // -->
+  <title>점심 룰렛</title>
+
+  <!-- PWA Manifest Link -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Theme Color for Browser UI -->
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Apple Touch Icon (for iOS Add to Home Screen) -->
+  <link rel="apple-touch-icon" href="icon.png">
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="점심 룰렛" />
+  <meta property="og:description" content="오늘 점심 뭐 먹지? 룰렛으로 결정해보세요!" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://ers123.github.io/lunch/" />
+  <meta property="og:image" content="https://ers123.github.io/lunch/og_image.png" />
+  <!-- Optional but recommended OG image size -->
+  <!-- <meta property="og:image:width" content="1200" /> -->
+  <!-- <meta property="og:image:height" content="630" /> -->
+
+  <!-- Twitter Card Meta Tags (Optional) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- <meta name="twitter:site" content="@YourTwitterHandle"> --> <!-- If you have a Twitter handle -->
+  <meta name="twitter:title" content="점심 룰렛">
+  <meta name="twitter:description" content="오늘 점심 뭐 먹지? 룰렛으로 결정해보세요!">
+  <meta name="twitter:image" content="https://ers123.github.io/lunch/og_image.png">
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <style>
     :root {
@@ -39,7 +65,8 @@
     #controls {
       display: flex;
       gap: 0.7rem; /* Slightly increased gap */
-      margin-bottom: 2.8rem; /* Increased margin */
+      margin-bottom: 2.8rem; /* Adjusted in the provided code, keeping it for reference */
+      /* margin-bottom: 1.8rem; /* Reverted to previous state or adjust as needed */
       width: var(--size);
       max-width: 100%;
     }
@@ -109,7 +136,8 @@
       border-right: 16px solid transparent;
       border-top: var(--h) solid #333; /* Changed to dark gray/black */
       filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));
-      margin-top: 2px; /* Adjusted margin for slight overlap */
+      margin-top: 2px;/* Adjusted in the provided code, keeping it for reference */
+      /*margin-top: -4px; Reverted to previous state or adjust as needed */
       z-index: 5;
     }
     svg path {
@@ -399,6 +427,7 @@
     </div>
   </div>
 
+  <!-- App Script -->
   <script>
     // --- Constants ---
     const FULL_CIRCLE = 360;
@@ -502,17 +531,15 @@
     function buildWheel() {
         wheel.innerHTML = '';
         segmentPositions = [];
-        // result.textContent = ''; // Clear feedback only when needed, not on every build
+        // result.textContent = ''; // Clear feedback only when needed
 
         const enableButtons = items.length >= 2;
-        spinBtn.disabled = spinning || !enableButtons; // Disable if spinning or not enough items
-        resetBtn.disabled = spinning; // Only disable reset if spinning
+        spinBtn.disabled = spinning || !enableButtons;
+        resetBtn.disabled = spinning;
 
         if (items.length === 0) {
             result.textContent = '항목이 없습니다. 메뉴를 추가해주세요!';
-            spinBtn.disabled = true; // Ensure spin is disabled
-            // Decide if reset should be enabled to restore defaults even when empty
-            // resetBtn.disabled = true;
+            spinBtn.disabled = true;
             return;
         }
 
@@ -610,7 +637,7 @@
         if (items.length === 0) {
             result.textContent = '모든 항목이 제거되었습니다. 새 항목을 추가해주세요.';
         } else if (items.length < 2) {
-            spinBtn.disabled = true; // Disable spin if less than 2 items remain
+            spinBtn.disabled = true;
         }
     }
 
@@ -677,7 +704,7 @@
                 }
 
                 spinning = false;
-                spinBtn.disabled = items.length < 2; // Re-enable only if still possible to spin
+                spinBtn.disabled = items.length < 2;
                 resetBtn.disabled = false;
             }
         });
@@ -778,6 +805,21 @@
       resultPopup.addEventListener('click', (e) => { if (e.target === resultPopup) hideResultPopup(); });
     }
 
+  </script>
+
+  <!-- Service Worker Registration Script -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js') // Register the service worker
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
   </script>
 </body>
 </html>
