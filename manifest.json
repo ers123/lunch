@@ -1,4 +1,3 @@
-// manifest.json
 {
   "name": "Lunch Roulette",
   "short_name": "점심룰렛",
@@ -15,7 +14,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "icon.png", // 동일 파일을 다른 크기로도 지정 가능 (더 큰 아이콘 권장)
+      "src": "icon.png", 
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
