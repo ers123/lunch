@@ -1,6 +1,6 @@
 // sw.js
 
-const CACHE_NAME = 'lunch-roulette-cache-v1'; // 캐시 이름 (버전 변경 시 업데이트 필요)
+const CACHE_NAME = 'lunch-roulette-cache-v2'; // 캐시 이름 (버전 변경 시 업데이트 필요)
 const urlsToCache = [
   './', // 루트 URL (index.html)
   './index.html',
