@@ -4,8 +4,8 @@
   "description": "오늘 점심 뭐 먹지? 룰렛으로 결정해보세요!",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#e9edf1",
-  "theme_color": "#2563eb",
+  "background_color": "#0a0b1e",
+  "theme_color": "#0a0b1e",
   "icons": [
     {
       "src": "icon.png",
